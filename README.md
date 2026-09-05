@@ -1,6 +1,6 @@
 # Ade Programming Language & Language-Building Platform
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/version-0.5.0-blue.svg)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Python: 3.12+](https://img.shields.io/badge/python-3.12%2B-brightgreen.svg)](https://python.org)
 
