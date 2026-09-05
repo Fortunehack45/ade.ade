@@ -1,0 +1,17 @@
+# Control flow in Ade
+age = 19
+
+if age >= 18 {
+    say "Status: Adult"
+} else {
+    say "Status: Minor"
+}
+
+# While loop
+counter = 3
+say "Countdown:"
+while counter > 0 {
+    say counter
+    counter = counter - 1
+}
+say "Blastoff!"

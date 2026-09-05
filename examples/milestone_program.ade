@@ -1,0 +1,15 @@
+name = "Fortune"
+numbers = [1, 2, 3, 4, 5]
+
+function total(items) {
+    result = 0
+
+    for item in items {
+        result = result + item
+    }
+
+    return result
+}
+
+say "Hello, " + name
+say total(numbers)

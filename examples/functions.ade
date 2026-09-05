@@ -1,0 +1,27 @@
+# Functions and closures in Ade
+
+function add(a, b) {
+    return a + b
+}
+
+say "add(10, 20) = " + str(add(10, 20))
+
+# Higher-order function & closure
+function make_multiplier(factor) {
+    return function(x) {
+        return x * factor
+    }
+}
+
+triple = make_multiplier(3)
+say "triple(7) = " + str(triple(7))
+
+# Recursion: factorial
+function factorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+say "factorial(5) = " + str(factorial(5))

@@ -1,0 +1,13 @@
+# Variables and basic operations in Ade
+name = "Fortune"
+age = 19
+height = 1.8
+is_developer = true
+
+say "User Profile:"
+say "Name: " + name
+say "Age: " + str(age)
+say "Height: " + str(height)
+
+next_year = age + 1
+say "Next year age: " + str(next_year)

@@ -1,0 +1,22 @@
+# Collections (Lists and Maps) in Ade
+
+# Lists
+numbers = [10, 20, 30, 40]
+say "List length: " + str(len(numbers))
+say "First element: " + str(numbers[0])
+
+# Iteration
+say "Iterating numbers:"
+for num in numbers {
+    say num
+}
+
+# Maps
+user = {
+    name: "Fortune",
+    role: "Engineer",
+    score: 100
+}
+
+say "User name: " + user.name
+say "User role: " + user["role"]
