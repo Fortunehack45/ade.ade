@@ -299,3 +299,164 @@ class AdeBuiltinFunction(AdeCallable):
         self, interpreter: Any, arguments: List[AdeValue], span: SourceSpan
     ) -> AdeValue:
         return self.fn(interpreter, arguments, span)
+
+
+# ============================================================================
+# Module & Object-Oriented Types
+# ============================================================================
+
+class AdeModule(AdeValue):
+    """An imported Ade module exporting symbols."""
+
+    def __init__(self, name: str, exports: Optional[Dict[str, AdeValue]] = None):
+        self.name = name
+        self.exports: Dict[str, AdeValue] = exports if exports is not None else {}
+
+    def type_name(self) -> str:
+        return "module"
+
+    def is_truthy(self) -> bool:
+        return True
+
+    def to_string(self) -> str:
+        return f"<module '{self.name}'>"
+
+    def get_export(self, name: str) -> Optional[AdeValue]:
+        return self.exports.get(name)
+
+
+class AdeClass(AdeCallable):
+    """Class definition."""
+
+    def __init__(
+        self,
+        name: str,
+        superclass: Optional["AdeClass"] = None,
+        fields: Optional[List[str]] = None,
+        methods: Optional[Dict[str, AdeFunction]] = None,
+    ):
+        self.name = name
+        self.superclass = superclass
+        self.fields = fields or []
+        self.methods = methods or {}
+
+    def type_name(self) -> str:
+        return "class"
+
+    def is_truthy(self) -> bool:
+        return True
+
+    def find_method(self, name: str) -> Optional[AdeFunction]:
+        if name in self.methods:
+            return self.methods[name]
+        if self.superclass is not None:
+            return self.superclass.find_method(name)
+        return None
+
+    def arity(self) -> int:
+        init_method = self.find_method("init") or self.find_method("construct")
+        if init_method is not None:
+            return init_method.arity()
+        return len(self.fields)
+
+    def to_string(self) -> str:
+        return f"<class {self.name}>"
+
+    def call(
+        self, interpreter: Any, arguments: List[AdeValue], span: SourceSpan
+    ) -> "AdeInstance":
+        return self.call_with_args(interpreter, arguments, {}, span)
+
+    def call_with_args(
+        self,
+        interpreter: Any,
+        pos_args: List[AdeValue],
+        named_args: Dict[str, AdeValue],
+        span: SourceSpan,
+    ) -> "AdeInstance":
+        instance = AdeInstance(self)
+        for k, v in named_args.items():
+            instance.fields[k] = v
+        for field_name, arg in zip(self.fields, pos_args):
+            if field_name not in instance.fields:
+                instance.fields[field_name] = arg
+
+        init_method = self.find_method("init") or self.find_method("construct")
+        if init_method is not None:
+            bound_init = AdeBoundMethod(instance, init_method)
+            init_args: List[AdeValue] = []
+            for i, p_name in enumerate(init_method.params):
+                if p_name in named_args:
+                    init_args.append(named_args[p_name])
+                elif i < len(pos_args):
+                    init_args.append(pos_args[i])
+            bound_init.call(interpreter, init_args, span)
+        return instance
+
+
+class AdeInstance(AdeValue):
+    """An instance of an AdeClass."""
+
+    def __init__(self, klass: AdeClass, fields: Optional[Dict[str, AdeValue]] = None):
+        self.klass = klass
+        self.fields: Dict[str, AdeValue] = fields if fields is not None else {}
+
+    def type_name(self) -> str:
+        return self.klass.name
+
+    def is_truthy(self) -> bool:
+        return True
+
+    def get_member(self, name: str) -> Optional[AdeValue]:
+        if name in self.fields:
+            return self.fields[name]
+        method = self.klass.find_method(name)
+        if method is not None:
+            return AdeBoundMethod(self, method)
+        return None
+
+    def set_member(self, name: str, value: AdeValue) -> None:
+        self.fields[name] = value
+
+    def to_string(self) -> str:
+        return f"<{self.klass.name} instance>"
+
+
+class AdeBoundMethod(AdeCallable):
+    """A method bound to a specific AdeInstance."""
+
+    def __init__(self, instance: AdeInstance, method: AdeFunction):
+        self.instance = instance
+        self.method = method
+
+    def type_name(self) -> str:
+        return "method"
+
+    def is_truthy(self) -> bool:
+        return True
+
+    def arity(self) -> int:
+        return self.method.arity()
+
+    def to_string(self) -> str:
+        return f"<bound method {self.method.name} of {self.instance.to_string()}>"
+
+    def call(
+        self, interpreter: Any, arguments: List[AdeValue], span: SourceSpan
+    ) -> AdeValue:
+        from ade.runtime.environment import Environment
+        from ade.interpreter.signals import ReturnSignal
+
+        # Lexical environment with 'self' bound to instance
+        env = Environment(parent=self.method.closure)
+        env.define("self", self.instance)
+
+        for param_name, arg_val in zip(self.method.params, arguments):
+            env.define(param_name, arg_val)
+
+        try:
+            interpreter.execute_block(self.method.body, env)
+        except ReturnSignal as ret:
+            return ret.value
+
+        return self.instance

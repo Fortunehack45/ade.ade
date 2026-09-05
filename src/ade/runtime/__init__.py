@@ -11,6 +11,10 @@ from ade.runtime.value import (
     AdeCallable,
     AdeFunction,
     AdeBuiltinFunction,
+    AdeModule,
+    AdeClass,
+    AdeInstance,
+    AdeBoundMethod,
 )
 from ade.runtime.environment import Environment
 
@@ -25,5 +29,9 @@ __all__ = [
     "AdeCallable",
     "AdeFunction",
     "AdeBuiltinFunction",
+    "AdeModule",
+    "AdeClass",
+    "AdeInstance",
+    "AdeBoundMethod",
     "Environment",
 ]

@@ -24,6 +24,10 @@ class TokenType(Enum):
     AND = auto()
     OR = auto()
     NOT = auto()
+    IMPORT = auto()
+    FROM = auto()
+    AS = auto()
+    CLASS = auto()
 
     # Literals and Identifiers
     IDENTIFIER = auto()
@@ -75,6 +79,10 @@ KEYWORDS = {
     "and": TokenType.AND,
     "or": TokenType.OR,
     "not": TokenType.NOT,
+    "import": TokenType.IMPORT,
+    "from": TokenType.FROM,
+    "as": TokenType.AS,
+    "class": TokenType.CLASS,
 }
 
 

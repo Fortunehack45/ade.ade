@@ -1,0 +1,16 @@
+# modules_demo.ade
+import math
+import json
+
+say "Math demo:"
+say "Square root of 144: {math.sqrt(144)}"
+say "Pi constant: {math.pi}"
+
+say "JSON demo:"
+payload = {
+    language: "Ade",
+    version: "0.2.0",
+    features: ["modules", "classes", "interpolation"]
+}
+json_text = json.stringify(payload)
+say json_text

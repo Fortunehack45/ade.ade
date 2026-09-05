@@ -53,7 +53,7 @@ def run_file(file_path: str) -> int:
         parser = Parser(tokens=tokens, source_code=source)
         program = parser.parse()
 
-        interpreter = Interpreter(source_code=source)
+        interpreter = Interpreter(source_code=source, current_file_path=file_path)
         interpreter.interpret(program)
         return 0
 

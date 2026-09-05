@@ -26,12 +26,17 @@ from ade.ast.nodes import (
     BinaryExpr,
     UnaryExpr,
     CallExpr,
+    NamedArgExpr,
     MemberAccessExpr,
     IndexAccessExpr,
     ListLiteral,
     MapLiteral,
     MapEntry,
     AnonymousFunctionExpr,
+    StringInterpolationExpr,
+    ImportStmt,
+    FromImportStmt,
+    ClassDeclStmt,
 )
 from ade.parser.errors import ParseError
 
@@ -125,6 +130,15 @@ class Parser:
             # Otherwise it's an anonymous function in an expression
             self.current -= 1
 
+        if self._match(TokenType.IMPORT):
+            return self._parse_import_statement()
+
+        if self._match(TokenType.FROM):
+            return self._parse_from_import_statement()
+
+        if self._match(TokenType.CLASS):
+            return self._parse_class_declaration()
+
         if self._match(TokenType.SAY):
             return self._parse_say_statement()
 
@@ -150,6 +164,109 @@ class Parser:
             return self._parse_block()
 
         return self._parse_assignment_or_expression_statement()
+
+    def _parse_import_statement(self) -> ImportStmt:
+        import_token = self._previous()
+        module_token = self._expect(
+            TokenType.IDENTIFIER,
+            message="expected module name after 'import'",
+            hint="Provide a module name to import, e.g. 'import math'."
+        )
+        alias = None
+        if self._match(TokenType.AS):
+            alias_token = self._expect(
+                TokenType.IDENTIFIER,
+                message="expected alias name after 'as'",
+                hint="Provide an alias name, e.g. 'import math as m'."
+            )
+            alias = alias_token.lexeme
+        span = SourceSpan.merge(import_token.span, self._previous().span)
+        return ImportStmt(span=span, module_name=module_token.lexeme, alias=alias)
+
+    def _parse_from_import_statement(self) -> FromImportStmt:
+        from_token = self._previous()
+        module_token = self._expect(
+            TokenType.IDENTIFIER,
+            message="expected module name after 'from'",
+            hint="Provide a module name, e.g. 'from math import sqrt'."
+        )
+        self._expect(
+            TokenType.IMPORT,
+            message="expected 'import' after module name in from-import statement",
+            hint="Use 'from <module> import <symbols>'."
+        )
+        symbols: List[tuple[str, Optional[str]]] = []
+        while True:
+            self._skip_newlines()
+            sym_token = self._expect(
+                TokenType.IDENTIFIER,
+                message="expected symbol name to import",
+                hint="Specify function, class, or variable name to import."
+            )
+            alias = None
+            if self._match(TokenType.AS):
+                alias_token = self._expect(
+                    TokenType.IDENTIFIER,
+                    message="expected alias name after 'as'",
+                )
+                alias = alias_token.lexeme
+            symbols.append((sym_token.lexeme, alias))
+            self._skip_newlines()
+            if not self._match(TokenType.COMMA):
+                break
+        span = SourceSpan.merge(from_token.span, self._previous().span)
+        return FromImportStmt(span=span, module_name=module_token.lexeme, symbols=symbols)
+
+    def _parse_class_declaration(self) -> ClassDeclStmt:
+        class_token = self._previous()
+        name_token = self._expect(
+            TokenType.IDENTIFIER,
+            message="expected class name after 'class'",
+            hint="Classes in Ade are declared with an identifier name, e.g. 'class User'."
+        )
+        superclass = None
+        if self._match(TokenType.LESS):
+            super_token = self._expect(TokenType.IDENTIFIER, message="expected superclass name")
+            superclass = super_token.lexeme
+
+        self._skip_newlines()
+        self._expect(
+            TokenType.LBRACE,
+            message="expected '{' before class body",
+            hint="Enclose class members and methods inside '{ ... }'."
+        )
+
+        fields: List[str] = []
+        methods: List[FunctionDeclStmt] = []
+        self._skip_newlines()
+
+        while not self._check(TokenType.RBRACE) and not self._is_at_end():
+            if self._match(TokenType.FUNCTION):
+                methods.append(self._parse_function_declaration())
+            elif self._match(TokenType.IDENTIFIER):
+                fields.append(self._previous().lexeme)
+            else:
+                curr = self._peek()
+                raise ParseError(
+                    message=f"Unexpected token '{curr.lexeme}' in class body.",
+                    span=curr.span,
+                    source_code=self.source_code,
+                    hint="Class bodies can contain field names or method definitions ('function name() { ... }')."
+                )
+            self._skip_newlines()
+
+        end_brace = self._expect(
+            TokenType.RBRACE,
+            message="expected '}' after class body"
+        )
+        span = SourceSpan.merge(class_token.span, end_brace.span)
+        return ClassDeclStmt(
+            span=span,
+            name=name_token.lexeme,
+            superclass=superclass,
+            fields=fields,
+            methods=methods
+        )
 
     def _parse_function_declaration(self) -> FunctionDeclStmt:
         func_token = self._previous()
@@ -403,7 +520,19 @@ class Parser:
                 if not self._check(TokenType.RPAREN):
                     while True:
                         self._skip_newlines()
-                        args.append(self._parse_expression())
+                        if (
+                            self._check(TokenType.IDENTIFIER)
+                            and self.current + 1 < len(self.tokens)
+                            and self.tokens[self.current + 1].type == TokenType.COLON
+                        ):
+                            name_tok = self._advance()
+                            self._advance()  # consume ':'
+                            self._skip_newlines()
+                            val_expr = self._parse_expression()
+                            arg_span = SourceSpan.merge(name_tok.span, val_expr.span)
+                            args.append(NamedArgExpr(span=arg_span, name=name_tok.lexeme, value=val_expr))
+                        else:
+                            args.append(self._parse_expression())
                         self._skip_newlines()
                         if not self._match(TokenType.COMMA):
                             break
@@ -458,6 +587,12 @@ class Parser:
 
         if self._match(TokenType.STRING):
             token = self._previous()
+            val = str(token.literal)
+            if "{" in val and "}" in val:
+                parts = self._parse_interpolated_string(val, token.span)
+                if len(parts) == 1 and isinstance(parts[0], str):
+                    return StringLiteral(span=token.span, value=parts[0])
+                return StringInterpolationExpr(span=token.span, parts=parts)
             return StringLiteral(span=token.span, value=token.literal)
 
         if self._match(TokenType.TRUE):
@@ -614,3 +749,51 @@ class Parser:
         body = self._parse_block()
         span = SourceSpan.merge(func_token.span, body.span)
         return AnonymousFunctionExpr(span=span, params=params, body=body)
+
+    def _parse_interpolated_string(
+        self, text: str, span: SourceSpan
+    ) -> List[Union[str, Expression]]:
+        """Decompose a string containing '{...}' into string slices and parsed Ade expressions."""
+        from ade.lexer.lexer import Lexer
+
+        parts: List[Union[str, Expression]] = []
+        i = 0
+        n = len(text)
+        current_str: List[str] = []
+
+        while i < n:
+            if text[i] == "{" and (i == 0 or text[i - 1] != "\\"):
+                brace_depth = 1
+                j = i + 1
+                while j < n and brace_depth > 0:
+                    if text[j] == "{" and text[j - 1] != "\\":
+                        brace_depth += 1
+                    elif text[j] == "}" and text[j - 1] != "\\":
+                        brace_depth -= 1
+                    j += 1
+
+                if brace_depth == 0:
+                    if current_str:
+                        parts.append("".join(current_str))
+                        current_str = []
+                    expr_code = text[i + 1 : j - 1].strip()
+                    if expr_code:
+                        try:
+                            sub_lexer = Lexer(expr_code, file_path=span.file)
+                            sub_tokens = sub_lexer.tokenize()
+                            sub_parser = Parser(sub_tokens, source_code=expr_code)
+                            sub_expr = sub_parser._parse_expression()
+                            parts.append(sub_expr)
+                        except Exception:
+                            # Fallback if inner expression fails to parse
+                            parts.append("{" + expr_code + "}")
+                    i = j
+                    continue
+
+            current_str.append(text[i])
+            i += 1
+
+        if current_str:
+            parts.append("".join(current_str))
+
+        return parts

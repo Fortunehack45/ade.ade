@@ -24,12 +24,17 @@ from ade.ast.nodes import (
     BinaryExpr,
     UnaryExpr,
     CallExpr,
+    NamedArgExpr,
     MemberAccessExpr,
     IndexAccessExpr,
     ListLiteral,
     MapLiteral,
     MapEntry,
     AnonymousFunctionExpr,
+    StringInterpolationExpr,
+    ImportStmt,
+    FromImportStmt,
+    ClassDeclStmt,
 )
 from ade.ast.visitor import ASTVisitor
 
@@ -49,6 +54,9 @@ __all__ = [
     "ReturnStmt",
     "BreakStmt",
     "ContinueStmt",
+    "ImportStmt",
+    "FromImportStmt",
+    "ClassDeclStmt",
     "NumberLiteral",
     "StringLiteral",
     "BoolLiteral",
@@ -63,5 +71,6 @@ __all__ = [
     "MapLiteral",
     "MapEntry",
     "AnonymousFunctionExpr",
+    "StringInterpolationExpr",
     "ASTVisitor",
 ]

@@ -75,6 +75,13 @@ class CallExpr(Expression):
 
 
 @dataclass
+class NamedArgExpr(Expression):
+    """Named argument in a call: name: value."""
+    name: str
+    value: Expression
+
+
+@dataclass
 class MemberAccessExpr(Expression):
     """Member access: object.member."""
     object: Expression
@@ -112,6 +119,12 @@ class AnonymousFunctionExpr(Expression):
     """Anonymous function: function(params) { body }."""
     params: List[str]
     body: "BlockStmt"
+
+
+@dataclass
+class StringInterpolationExpr(Expression):
+    """String interpolation: parts are string chunks or expressions."""
+    parts: List[Union[str, Expression]]
 
 
 # ============================================================================
@@ -202,3 +215,26 @@ class BreakStmt(Statement):
 class ContinueStmt(Statement):
     """Continue loop iteration statement."""
     pass
+
+
+@dataclass
+class ImportStmt(Statement):
+    """Import statement: import <module_name> (as <alias>)?."""
+    module_name: str
+    alias: Optional[str]
+
+
+@dataclass
+class FromImportStmt(Statement):
+    """From-import statement: from <module_name> import <sym> (as <alias>)?, ..."""
+    module_name: str
+    symbols: List[Tuple[str, Optional[str]]]  # (original_name, alias)
+
+
+@dataclass
+class ClassDeclStmt(Statement):
+    """Class declaration: class Name (extends Super)? { fields, methods }."""
+    name: str
+    superclass: Optional[str]
+    fields: List[str]
+    methods: List[FunctionDeclStmt]

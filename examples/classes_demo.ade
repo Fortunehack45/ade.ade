@@ -1,0 +1,22 @@
+# classes_demo.ade
+class User {
+    name
+    age
+
+    function greet() {
+        say "Hello, my name is {self.name} and I am {self.age} years old."
+    }
+
+    function have_birthday() {
+        self.age = self.age + 1
+        say "{self.name} is now {self.age}!"
+    }
+}
+
+fortune = User(
+    name: "Fortune",
+    age: 19
+)
+
+fortune.greet()
+fortune.have_birthday()

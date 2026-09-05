@@ -26,11 +26,16 @@ from ade.ast.nodes import (
     BinaryExpr,
     UnaryExpr,
     CallExpr,
+    NamedArgExpr,
     MemberAccessExpr,
     IndexAccessExpr,
     ListLiteral,
     MapLiteral,
     AnonymousFunctionExpr,
+    StringInterpolationExpr,
+    ImportStmt,
+    FromImportStmt,
+    ClassDeclStmt,
 )
 from ade.lexer.token import TokenType
 from ade.runtime.value import (
@@ -44,10 +49,15 @@ from ade.runtime.value import (
     AdeCallable,
     AdeFunction,
     AdeBuiltinFunction,
+    AdeModule,
+    AdeClass,
+    AdeInstance,
+    AdeBoundMethod,
 )
 from ade.runtime.environment import Environment
 from ade.interpreter.signals import ReturnSignal, BreakSignal, ContinueSignal
 from ade.interpreter.errors import AdeRuntimeError
+from ade.modules.loader import ModuleLoader
 
 
 class Interpreter:
@@ -58,11 +68,15 @@ class Interpreter:
         output_stream: Optional[TextIO] = None,
         source_code: Optional[str] = None,
         environment: Optional[Environment] = None,
+        current_file_path: str = "<stdin>",
+        module_loader: Optional[ModuleLoader] = None,
     ):
         self.output_stream = output_stream or sys.stdout
         self.source_code = source_code
         self.globals = environment or Environment()
         self.environment = self.globals
+        self.current_file_path = current_file_path
+        self.module_loader = module_loader or ModuleLoader()
         self._init_builtins()
 
     def _init_builtins(self) -> None:
@@ -181,6 +195,58 @@ class Interpreter:
             )
             raise ReturnSignal(ret_val)
 
+        if isinstance(stmt, ImportStmt):
+            mod = self.module_loader.load_module(
+                stmt.module_name, self.current_file_path, stmt.span, self
+            )
+            name = stmt.alias or stmt.module_name
+            self.environment.define(name, mod)
+            return mod
+
+        if isinstance(stmt, FromImportStmt):
+            mod = self.module_loader.load_module(
+                stmt.module_name, self.current_file_path, stmt.span, self
+            )
+            for orig_name, alias in stmt.symbols:
+                val = mod.get_export(orig_name)
+                if val is None:
+                    raise AdeRuntimeError(
+                        f"Module '{stmt.module_name}' has no export named '{orig_name}'.",
+                        span=stmt.span,
+                        source_code=self.source_code,
+                    )
+                self.environment.define(alias or orig_name, val)
+            return mod
+
+        if isinstance(stmt, ClassDeclStmt):
+            super_klass = None
+            if stmt.superclass:
+                super_val = self.environment.get(stmt.superclass)
+                if not isinstance(super_val, AdeClass):
+                    raise AdeRuntimeError(
+                        f"Superclass '{stmt.superclass}' is not a class.",
+                        span=stmt.span,
+                        source_code=self.source_code,
+                    )
+                super_klass = super_val
+
+            methods: dict[str, AdeFunction] = {}
+            for m in stmt.methods:
+                methods[m.name] = AdeFunction(
+                    name=m.name,
+                    params=m.params,
+                    body=m.body,
+                    closure=self.environment,
+                )
+            klass = AdeClass(
+                name=stmt.name,
+                superclass=super_klass,
+                fields=stmt.fields,
+                methods=methods,
+            )
+            self.environment.define(stmt.name, klass)
+            return klass
+
         if isinstance(stmt, BreakStmt):
             raise BreakSignal()
 
@@ -214,15 +280,18 @@ class Interpreter:
 
         if isinstance(stmt.target, MemberAccessExpr):
             obj = self.evaluate(stmt.target.object)
-            if not isinstance(obj, AdeMap):
-                raise AdeRuntimeError(
-                    f"Cannot set property '{stmt.target.member}' on type '{obj.type_name()}'.",
-                    span=stmt.target.span,
-                    source_code=self.source_code,
-                    hint="Member assignment is only valid on map/object types."
-                )
-            obj.entries[stmt.target.member] = val
-            return val
+            if isinstance(obj, AdeInstance):
+                obj.set_member(stmt.target.member, val)
+                return val
+            if isinstance(obj, AdeMap):
+                obj.entries[stmt.target.member] = val
+                return val
+            raise AdeRuntimeError(
+                f"Cannot set property '{stmt.target.member}' on type '{obj.type_name()}'.",
+                span=stmt.target.span,
+                source_code=self.source_code,
+                hint="Member assignment is supported on class instances and maps."
+            )
 
         if isinstance(stmt.target, IndexAccessExpr):
             obj = self.evaluate(stmt.target.object)
@@ -357,6 +426,16 @@ class Interpreter:
                 body=expr.body,
                 closure=self.environment,
             )
+
+        if isinstance(expr, StringInterpolationExpr):
+            parts: List[str] = []
+            for part in expr.parts:
+                if isinstance(part, str):
+                    parts.append(part)
+                else:
+                    val = self.evaluate(part)
+                    parts.append(val.to_string())
+            return AdeString("".join(parts))
 
         raise AdeRuntimeError(
             f"Unknown expression node '{type(expr).__name__}'.",
@@ -499,16 +578,42 @@ class Interpreter:
 
     def _evaluate_call(self, expr: CallExpr) -> AdeValue:
         callee = self.evaluate(expr.callee)
-        args = [self.evaluate(arg) for arg in expr.arguments]
+
+        pos_args: List[AdeValue] = []
+        named_args: dict[str, AdeValue] = {}
+        for arg in expr.arguments:
+            if isinstance(arg, NamedArgExpr):
+                named_args[arg.name] = self.evaluate(arg.value)
+            else:
+                pos_args.append(self.evaluate(arg))
 
         if not isinstance(callee, AdeCallable):
             raise AdeRuntimeError(
                 f"Type '{callee.type_name()}' is not callable.",
                 span=expr.callee.span,
                 source_code=self.source_code,
-                hint="Only functions and builtins can be called with '()'."
+                hint="Only functions, classes, and builtins can be called with '()'."
             )
 
+        if isinstance(callee, AdeClass):
+            return callee.call_with_args(self, pos_args, named_args, expr.span)
+
+        if named_args and isinstance(callee, AdeFunction):
+            ordered_args = []
+            for i, param_name in enumerate(callee.params):
+                if param_name in named_args:
+                    ordered_args.append(named_args[param_name])
+                elif i < len(pos_args):
+                    ordered_args.append(pos_args[i])
+                else:
+                    raise AdeRuntimeError(
+                        f"Missing required parameter '{param_name}'.",
+                        span=expr.span,
+                        source_code=self.source_code,
+                    )
+            return callee.call(self, ordered_args, expr.span)
+
+        args = pos_args
         if callee.arity() != len(args):
             raise AdeRuntimeError(
                 f"Expected {callee.arity()} argument(s), but got {len(args)}.",
@@ -521,17 +626,48 @@ class Interpreter:
 
     def _evaluate_member_access(self, expr: MemberAccessExpr) -> AdeValue:
         obj = self.evaluate(expr.object)
+
         if isinstance(obj, AdeMap):
             if expr.member in obj.entries:
                 return obj.entries[expr.member]
-            # If property doesn't exist, return null
             return AdeNull.INSTANCE
+
+        if isinstance(obj, AdeModule):
+            val = obj.get_export(expr.member)
+            if val is not None:
+                return val
+            raise AdeRuntimeError(
+                f"Module '{obj.name}' has no export named '{expr.member}'.",
+                span=expr.span,
+                source_code=self.source_code,
+                hint=f"Available exports in '{obj.name}': {', '.join(obj.exports.keys())}"
+            )
+
+        if isinstance(obj, AdeInstance):
+            val = obj.get_member(expr.member)
+            if val is not None:
+                return val
+            raise AdeRuntimeError(
+                f"Instance of '{obj.klass.name}' has no property or method '{expr.member}'.",
+                span=expr.span,
+                source_code=self.source_code,
+            )
+
+        if isinstance(obj, AdeClass):
+            method = obj.find_method(expr.member)
+            if method is not None:
+                return method
+            raise AdeRuntimeError(
+                f"Class '{obj.name}' has no static method '{expr.member}'.",
+                span=expr.span,
+                source_code=self.source_code,
+            )
 
         raise AdeRuntimeError(
             f"Cannot access member '.{expr.member}' on type '{obj.type_name()}'.",
             span=expr.span,
             source_code=self.source_code,
-            hint="Member access is only supported on map/object types."
+            hint="Member access is supported on maps, module exports, and class instances."
         )
 
     def _evaluate_index_access(self, expr: IndexAccessExpr) -> AdeValue:
