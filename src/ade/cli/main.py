@@ -18,18 +18,18 @@ from ade.cli.repl import start_repl
 HELP_TEXT = f"""Ade Programming Language — CLI (v{__version__})
 
 Usage:
-  ade run <file.ade>    Execute an Ade source file
-  ade check <file.ade>  Perform static type checking
-  ade repl              Launch the interactive REPL
-  ade --version, -v     Show current Ade version
-  ade --help, -h        Show this help message
+  ade run <file.ade>            Execute an Ade source file
+  ade check <file.ade>          Perform static type checking
+  ade dsl <spec.ade> <file.dsl> Execute a custom DSL script using an Ade specification
+  ade repl                      Launch the interactive REPL
+  ade --version, -v             Show current Ade version
+  ade --help, -h                Show this help message
 
 Future Language-Development Commands:
   ade build <file.ade>  (Scheduled for Phase 11)
   ade test              (Scheduled for Phase 8)
   ade fmt               (Scheduled for Phase 14)
   ade package           (Scheduled for Phase 6)
-  ade lang new <name>   (Scheduled for Phase 13)
 """
 
 
@@ -124,6 +124,72 @@ def check_file(file_path: str) -> int:
         return 1
 
 
+def run_dsl(spec_path: str, dsl_path: str) -> int:
+    """Execute an Ade specification file to configure a DSL, then parse & run the DSL file."""
+    if not os.path.exists(spec_path):
+        print(f"Error: spec file '{spec_path}' does not exist.", file=sys.stderr)
+        return 1
+    if not os.path.exists(dsl_path):
+        print(f"Error: DSL file '{dsl_path}' does not exist.", file=sys.stderr)
+        return 1
+
+    try:
+        with open(spec_path, "r", encoding="utf-8") as f:
+            spec_source = f.read()
+        with open(dsl_path, "r", encoding="utf-8") as f:
+            dsl_source = f.read()
+    except Exception as e:
+        print(f"Error reading files: {e}", file=sys.stderr)
+        return 1
+
+    reporter = DiagnosticReporter(output_stream=sys.stderr)
+
+    try:
+        # 1. Execute spec file
+        lexer = Lexer(source=spec_source, file_path=spec_path)
+        tokens = lexer.tokenize()
+        parser = Parser(tokens=tokens, source_code=spec_source)
+        program = parser.parse()
+
+        interpreter = Interpreter(source_code=spec_source, current_file_path=spec_path)
+        interpreter.interpret(program)
+
+        # 2. Look for the engine instance in the environment
+        engine_val = None
+        for name in ("engine", "dsl", "calc", "query", "lang", "app"):
+            candidate = interpreter.environment.values.get(name)
+            if candidate is not None and hasattr(candidate, "fields") and "execute" in candidate.fields:
+                engine_val = candidate
+                break
+
+        if engine_val is None:
+            # Look for any AdeInstance with an execute field
+            for name, val in interpreter.environment.values.items():
+                if hasattr(val, "fields") and "execute" in val.fields:
+                    engine_val = val
+                    break
+
+        if engine_val is None:
+            print(f"Error: Spec file '{spec_path}' did not define a DSL engine (e.g. 'engine = language.create(...)').", file=sys.stderr)
+            return 1
+
+        exec_fn = engine_val.fields["execute"]
+        from ade.runtime.value import AdeString
+        from ade.diagnostics.span import SourceLocation, SourceSpan
+        span = tokens[-1].span if tokens else SourceSpan.from_single(SourceLocation(spec_path, 1, 1, 0))
+        res = exec_fn.call(interpreter, [AdeString(dsl_source)], span)
+        if not (hasattr(res, "value") and res.value is None):
+            print(res.to_string())
+        return 0
+
+    except (LexerError, ParseError, AdeRuntimeError) as e:
+        reporter.report(e.to_diagnostic())
+        return 1
+    except Exception as e:
+        print(f"DSL Execution Error: {e}", file=sys.stderr)
+        return 1
+
+
 def main(argv: list[str] | None = None) -> int:
     """Entry point for the 'ade' executable and 'python -m ade'."""
     args = list(sys.argv[1:] if argv is None else argv)
@@ -157,6 +223,12 @@ def main(argv: list[str] | None = None) -> int:
             print("Error: Missing file path.\nUsage: ade check <file.ade>", file=sys.stderr)
             return 1
         return check_file(args[1])
+
+    if command == "dsl":
+        if len(args) < 3:
+            print("Error: Missing arguments.\nUsage: ade dsl <spec.ade> <file.dsl>", file=sys.stderr)
+            return 1
+        return run_dsl(args[1], args[2])
 
     # Unimplemented future commands
     future_commands = {

@@ -4,6 +4,27 @@ All notable changes to Ade will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-09-05
+
+### Added
+- **Language-Building Platform Toolkit (`ade.language`)**:
+  - `LanguageEngine`: Central coordinator for creating, parsing, and executing custom DSLs and scripting languages.
+  - `DSLLexer` & `LexerRule`: Dynamic, regex-pattern token definition with automatic whitespace skipping and numeric literal conversions.
+  - `DSLParser`: Composable Pratt operator precedence parser supporting prefix operators, infix/binary operators (with custom precedence and associativity), literal rules, and grouped expressions.
+  - `DSLNode`: Generic, inspectable AST nodes with `child(i)`, `.pretty()`, and `.to_dict()` helpers.
+  - `DSLEvaluator` & `DSLContext`: Extensible AST visitor evaluating custom languages with dynamic variable contexts.
+- **In-Language DSL Platform Module (`import language`)**:
+  - Standard library module `language` exposing `language.create(name)`.
+  - In-language builder APIs: `.token()`, `.ignore()`, `.literal()`, `.binary_op()`, `.prefix_op()`, `.group()`, `.parse()`, and `.execute()`.
+- **CLI Subcommand `ade dsl <spec.ade> <file.dsl>`**:
+  - Direct execution of custom DSL scripts using an Ade language specification file.
+- **Full Static Typing Integration**:
+  - Registered `language` module signatures in `TypeChecker` so `ade check` validates DSL builder scripts.
+- **Examples & Documentation**:
+  - `examples/dsl_calculator.ade`: Arithmetic expression language demo.
+  - `examples/dsl_query.ade`: Custom data query/filtering DSL demo.
+  - `docs/language_platform.md`: Comprehensive guide to compiler construction and DSL design with Ade.
+
 ## [0.4.0] - 2026-09-05
 
 ### Added

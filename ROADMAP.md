@@ -111,9 +111,10 @@ This document outlines the progressive phases of developing the Ade programming 
 ---
 
 ## Phase 13: Language-Building Platform Toolkit
-- [ ] Public compiler API: `ade.language`.
-- [ ] Composable lexer, grammar, and AST builder interfaces.
-- [ ] Custom language definition syntax and runtime binding.
+- [x] Public compiler API: `ade.language`.
+- [x] Composable lexer, grammar, and AST builder interfaces (`LanguageEngine`, `DSLLexer`, `DSLParser`, `DSLNode`).
+- [x] Custom language definition syntax and runtime binding natively in Ade (`import language`).
+- [x] Custom DSL CLI execution (`ade dsl <spec.ade> <file.dsl>`).
 
 ---
 

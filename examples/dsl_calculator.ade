@@ -1,0 +1,61 @@
+# dsl_calculator.ade
+# Demonstrates building an arithmetic expression DSL natively in Ade.
+
+import language
+
+say "=== Ade Language-Building Platform: Calculator DSL Demo ==="
+
+# 1. Initialize the custom language engine
+calc = language.create("CalcDSL")
+
+# 2. Define lexical tokens
+calc.token("NUMBER", "\\d+", false)
+calc.token("PLUS", "\\+", false)
+calc.token("MINUS", "-", false)
+calc.token("STAR", "\\*", false)
+calc.token("SLASH", "/", false)
+calc.token("LPAREN", "\\(", false)
+calc.token("RPAREN", "\\)", false)
+calc.ignore("\\s+")
+
+# 3. Define grammar & Pratt operator precedence
+calc.literal("NUMBER")
+calc.group("LPAREN", "RPAREN")
+
+function add_fn(a, b) {
+    return a + b
+}
+
+function sub_fn(a, b) {
+    return a - b
+}
+
+function mul_fn(a, b) {
+    return a * b
+}
+
+function div_fn(a, b) {
+    return a / b
+}
+
+calc.binary_op("PLUS", 10, "add", add_fn)
+calc.binary_op("MINUS", 10, "sub", sub_fn)
+calc.binary_op("STAR", 20, "mul", mul_fn)
+calc.binary_op("SLASH", 20, "div", div_fn)
+
+# 4. Parse expressions into AST
+ast = calc.parse("2 + 3 * 4")
+say "Parsed AST for '2 + 3 * 4':"
+say ast.pretty()
+
+# 5. Execute custom DSL formulas
+res1 = calc.execute("10 + 5 * 2")
+say "Formula '10 + 5 * 2' = {res1}"
+
+res2 = calc.execute("(10 + 5) * 2")
+say "Formula '(10 + 5) * 2' = {res2}"
+
+res3 = calc.execute("100 / (2 + 3) * 4")
+say "Formula '100 / (2 + 3) * 4' = {res3}"
+
+say "Calculator DSL completed successfully!"

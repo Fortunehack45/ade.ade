@@ -204,6 +204,18 @@ class TypeChecker:
             Symbol(name="io", type=io_class, span=dummy_span, is_class=True)
         )
 
+        language_class = ClassType(
+            name="language",
+            methods={
+                "create": FunctionType(param_types=[("name", TYPE_TEXT)], return_type=TYPE_ANY),
+                "engine": FunctionType(param_types=[("name", TYPE_TEXT)], return_type=TYPE_ANY),
+            }
+        )
+        self.global_scope.define(
+            "language",
+            Symbol(name="language", type=language_class, span=dummy_span, is_class=True)
+        )
+
     def check(self, program: Program) -> List[Diagnostic]:
         """Perform type checking across the entire program AST and return all diagnostics."""
         self.visit(program)

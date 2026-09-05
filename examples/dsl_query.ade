@@ -1,0 +1,83 @@
+# dsl_query.ade
+# Demonstrates building a custom Query / Filter DSL in Ade.
+
+import language
+
+say "=== Ade Language-Building Platform: Query Filter DSL ==="
+
+query_engine = language.create("QueryDSL")
+
+# 1. Lexer Tokens
+query_engine.token("NUMBER", "\\d+", false)
+query_engine.token("STRING", "'[^']*'", false)
+query_engine.token("AND", "AND|and", false)
+query_engine.token("OR", "OR|or", false)
+query_engine.token("GTE", ">=", false)
+query_engine.token("LTE", "<=", false)
+query_engine.token("GT", ">", false)
+query_engine.token("LT", "<", false)
+query_engine.token("EQ", "==", false)
+query_engine.token("IDENT", "[a-zA-Z_]\\w*", false)
+query_engine.ignore("\\s+")
+
+# 2. Grammar & Precedence
+query_engine.literal("NUMBER")
+query_engine.literal("STRING")
+query_engine.literal("IDENT", "identifier")
+
+function do_gt(a, b) {
+    return a > b
+}
+
+function do_gte(a, b) {
+    return a >= b
+}
+
+function do_lt(a, b) {
+    return a < b
+}
+
+function do_eq(a, b) {
+    return a == b
+}
+
+function do_and(a, b) {
+    return a and b
+}
+
+function do_or(a, b) {
+    return a or b
+}
+
+# Comparison operators (precedence 20)
+query_engine.binary_op("GT", 20, "gt", do_gt)
+query_engine.binary_op("GTE", 20, "gte", do_gte)
+query_engine.binary_op("LT", 20, "lt", do_lt)
+query_engine.binary_op("EQ", 20, "eq", do_eq)
+
+# Logical operators (precedence 10)
+query_engine.binary_op("AND", 10, "and", do_and)
+query_engine.binary_op("OR", 5, "or", do_or)
+
+# 3. Test data records
+users = [
+    {"name": "Alice", "age": 25, "active": 1},
+    {"name": "Bob", "age": 17, "active": 1},
+    {"name": "Charlie", "age": 30, "active": 0}
+]
+
+filter_rule = "age >= 18 AND active == 1"
+say "Applying DSL Filter: \"{filter_rule}\""
+
+for user in users {
+    # Strip quotes if string literal value
+    name = user["name"]
+    matches = query_engine.execute(filter_rule, user)
+    if matches {
+        say "  [MATCH] {name} passed the query filter!"
+    } else {
+        say "  [SKIP]  {name} did not pass."
+    }
+}
+
+say "Query DSL demonstration finished!"
