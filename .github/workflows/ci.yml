@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }} (Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.12", "3.13"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run test suite
+        run: pytest -v tests
+
+      - name: Verify CLI commands
+        run: |
+          python -m ade --version
+          python -m ade --help
+
+      - name: Verify static type checker
+        run: python -m ade check examples/types_demo.ade
+
+      - name: Verify sample programs execution
+        run: |
+          python -m ade run examples/milestone_program.ade
+          python -m ade run examples/classes_demo.ade
+          python -m ade run examples/modules_demo.ade
+          python -m ade run examples/types_demo.ade

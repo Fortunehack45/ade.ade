@@ -1,0 +1,56 @@
+name: ✨ Feature Request
+description: Suggest a new language feature, compiler enhancement, or CLI improvement for Ade.
+title: "[Feature]: "
+labels: ["enhancement", "proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping shape the future of Ade!
+        Please describe the feature and provide concrete syntax examples where applicable.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: Is your feature request related to a problem or limitation?
+      placeholder: "It is currently tedious or impossible to..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution & Syntax
+      description: Describe the solution or new syntax you would like to see in Ade.
+      placeholder: |
+        ```ade
+        # Example proposed syntax
+        match value {
+            1 -> say "one"
+            _ -> say "other"
+        }
+        ```
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative designs or workarounds?
+    validations:
+      required: false
+  - type: dropdown
+    id: component
+    attributes:
+      label: Primary Affected Component
+      description: Which part of the Ade platform does this proposal affect?
+      options:
+        - "Lexer / Syntax"
+        - "Parser / AST"
+        - "Type System / Type Checker (`ade check`)"
+        - "Standard Library"
+        - "Language-Building Platform (`ade.language`)"
+        - "Runtime & Interpreter"
+        - "CLI / REPL"
+        - "Bytecode / Compiler"
+    validations:
+      required: true

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Ade Community Discussions
+    url: https://github.com/Fortunehack45/ade.ade/discussions
+    about: Ask questions, share your Ade programs, or discuss language-building ideas.
+  - name: 📖 Ade Language Specification
+    url: https://github.com/Fortunehack45/ade.ade/blob/main/LANGUAGE_SPEC.md
+    about: Read the formal specification of the Ade programming language.

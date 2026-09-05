@@ -1,0 +1,42 @@
+name: 📜 Language Design RFC / Platform Proposal
+description: Submit a formal Request for Comments (RFC) for a major grammar addition, DSL toolkit design, or compiler architecture change.
+title: "[RFC]: "
+labels: ["rfc", "design"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for major language features, DSL kit additions, or significant compiler architectural modifications.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Executive Summary
+      description: A concise 1-3 paragraph summary of the proposal.
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why should this be part of Ade? What developer workflows or language-creation capabilities does it unlock?
+    validations:
+      required: true
+  - type: textarea
+    id: detailed-design
+    attributes:
+      label: Detailed Design & Grammar
+      description: Explain the syntax, grammar changes (EBNF if applicable), AST nodes, type rules, and execution semantics.
+      placeholder: |
+        ### Syntax & Grammar
+        ...
+        ### Runtime Semantics
+        ...
+    validations:
+      required: true
+  - type: textarea
+    id: backwards-compatibility
+    attributes:
+      label: Backwards Compatibility
+      description: Does this break existing Ade code or reserved keywords? How is progressive complexity preserved?
+    validations:
+      required: true

@@ -1,0 +1,66 @@
+name: 🐛 Bug Report
+description: Report a bug, parser failure, incorrect runtime behavior, or diagnostic issue in Ade.
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue in Ade!
+        Please provide a concise description and a minimal reproducible `.ade` code snippet.
+  - type: input
+    id: version
+    attributes:
+      label: Ade Version
+      description: What version of Ade are you using? (Run `ade --version`)
+      placeholder: "e.g. 0.3.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What operating system are you running Ade on?
+      options:
+        - Windows
+        - Linux (Ubuntu/Debian)
+        - macOS
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the Bug
+      description: A clear and concise explanation of what the bug is.
+      placeholder: "When running this code, the compiler crashed / produced an unexpected runtime error..."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal Reproducible Example (.ade code)
+      description: Please provide the smallest possible Ade code snippet that reproduces the issue.
+      placeholder: |
+        # Minimal code reproducing the issue
+        function example() {
+            say "error here"
+        }
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: Actual Behavior & Diagnostic Output
+      description: Paste the exact terminal output or diagnostic error you received.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect Ade to do instead?
+    validations:
+      required: true
