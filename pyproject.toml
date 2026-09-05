@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ade-lang"
-version = "0.2.0"
+version = "0.3.0"
 description = "Ade programming language and language-building platform"
 readme = "README.md"
 authors = [

@@ -1,0 +1,28 @@
+# Ade Type System & Static Checking Demo
+# Demonstrates gradual typing, function signatures, and generics foundations
+
+# 1. Explicitly typed variables
+name: text = "Fortune"
+age: number = 19
+is_developer: bool = true
+tags: list<text> = ["compiler", "ade", "programming"]
+bio: text? = null
+
+# 2. Function with parameter types and return type
+function calculate_experience(current_age: number, start_age: number) -> number {
+    return current_age - start_age
+}
+
+# 3. String interpolation with typed values
+years: number = calculate_experience(age, 13)
+say "Developer: {name}"
+say "Age: {age}"
+say "Years of coding: {years}"
+
+# 4. Typed function with collection parameter
+function count_tags(items: list<text>) -> number {
+    return len(items)
+}
+
+tag_count: number = count_tags(tags)
+say "Total tags: {tag_count}"

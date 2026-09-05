@@ -4,6 +4,22 @@ All notable changes to Ade will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-05
+
+### Added
+- **Gradual & Static Type System (`ade.types`, `ade.semantic`)**:
+  - Optional variable type annotations: `name: text = "Fortune"`, `age: number = 19`, `active: bool = true`, `val: text? = null`.
+  - Function signatures with parameter and return types: `function add(a: number, b: number) -> number`.
+  - Generic collection types: `list<number>`, `map<text, number>`.
+  - Nullable types: `T?` accepting `T` or `null`.
+  - Union types: `T1 | T2` permitting multiple candidate types.
+  - Hierarchical type compatibility and assignability engine (`AdeType`, `PrimitiveType`, `ListType`, `MapType`, `NullableType`, `UnionType`, `FunctionType`, `ClassType`).
+  - Scoped semantic symbol resolution tables (`Symbol`, `SymbolTable`).
+  - Static type checker pass (`TypeChecker`) detecting mismatches, invalid arguments, return type errors, and undefined variables before execution.
+- **CLI Command `ade check <file.ade>` (`ade.cli`)**:
+  - New subcommand executing full static semantic analysis without code execution.
+  - Rust/Clang-grade visual diagnostics with line snippets, gutters, carets (`^`), notes, and actionable `Try:` suggestions.
+
 ## [0.2.0] - 2026-09-05
 
 ### Added

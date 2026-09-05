@@ -48,6 +48,9 @@ class TokenType(Enum):
     GREATER = auto()        # >
     GREATER_EQUAL = auto()  # >=
     DOT = auto()            # .
+    ARROW = auto()          # ->
+    QUESTION = auto()       # ?
+    PIPE = auto()           # |
 
     # Delimiters
     LPAREN = auto()         # (

@@ -165,7 +165,16 @@ class Lexer:
             self._add_token(TokenType.PLUS)
             return
         if c == "-":
-            self._add_token(TokenType.MINUS)
+            if self._match(">"):
+                self._add_token(TokenType.ARROW)
+            else:
+                self._add_token(TokenType.MINUS)
+            return
+        if c == "?":
+            self._add_token(TokenType.QUESTION)
+            return
+        if c == "|":
+            self._add_token(TokenType.PIPE)
             return
         if c == "*":
             self._add_token(TokenType.STAR)

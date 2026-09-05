@@ -12,6 +12,9 @@ class Severity(Enum):
     HINT = auto()
 
 
+DiagnosticSeverity = Severity
+
+
 @dataclass
 class Diagnostic:
     """A compiler or runtime diagnostic message with source tracking."""

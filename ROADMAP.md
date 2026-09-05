@@ -14,60 +14,60 @@ This document outlines the progressive phases of developing the Ade programming 
 ---
 
 ## Phase 1: Lexer & Source Tracking (Milestone 0.1)
-- [ ] Source location tracking: `SourceLocation`, `SourceSpan`.
-- [ ] Token definitions and token types.
-- [ ] Robust lexer with column/line preservation, string escapes, number parsing (integers & decimals), identifiers, keywords, delimiters, and `#` comments.
-- [ ] Automated lexer test suite.
+- [x] Source location tracking: `SourceLocation`, `SourceSpan`.
+- [x] Token definitions and token types.
+- [x] Robust lexer with column/line preservation, string escapes, number parsing (integers & decimals), identifiers, keywords, delimiters, and `#` comments.
+- [x] Automated lexer test suite.
 
 ---
 
 ## Phase 2: AST & Parser (Milestone 0.1)
-- [ ] Strongly typed AST node definitions (`Program`, `Statement`, `Expression`, `Literal`, `BinaryExpr`, `UnaryExpr`, `CallExpr`, `IfStmt`, `WhileStmt`, `ForStmt`, `FunctionDecl`, etc.).
-- [ ] Pratt expression parser with well-defined operator precedence.
-- [ ] Recursive-descent statement and block parser.
-- [ ] AST Visitor interface.
-- [ ] Syntax error recovery and diagnostics.
-- [ ] Automated parser test suite.
+- [x] Strongly typed AST node definitions (`Program`, `Statement`, `Expression`, `Literal`, `BinaryExpr`, `UnaryExpr`, `CallExpr`, `IfStmt`, `WhileStmt`, `ForStmt`, `FunctionDecl`, etc.).
+- [x] Pratt expression parser with well-defined operator precedence.
+- [x] Recursive-descent statement and block parser.
+- [x] AST Visitor interface.
+- [x] Syntax error recovery and diagnostics.
+- [x] Automated parser test suite.
 
 ---
 
 ## Phase 3: Runtime & Tree-Walk Interpreter (Milestone 0.1)
-- [ ] Clean runtime value model: `AdeValue`, `AdeNumber`, `AdeString`, `AdeBool`, `AdeNull`, `AdeList`, `AdeMap`, `AdeFunction`, `AdeBuiltinFunction`.
-- [ ] Scoped lexical environments (`Environment`) with closures.
-- [ ] Control flow signal management (`return`, `break`, `continue`).
-- [ ] Standard operations: arithmetic, comparisons, logical operations, indexing, member access.
-- [ ] `say` output execution.
-- [ ] Automated interpreter test suite.
+- [x] Clean runtime value model: `AdeValue`, `AdeNumber`, `AdeString`, `AdeBool`, `AdeNull`, `AdeList`, `AdeMap`, `AdeFunction`, `AdeBuiltinFunction`.
+- [x] Scoped lexical environments (`Environment`) with closures.
+- [x] Control flow signal management (`return`, `break`, `continue`).
+- [x] Standard operations: arithmetic, comparisons, logical operations, indexing, member access.
+- [x] `say` output execution.
+- [x] Automated interpreter test suite.
 
 ---
 
 ## Phase 4: CLI & Interactive REPL (Milestone 0.1)
-- [ ] CLI runner: `ade run <file.ade>` and `python -m ade run <file.ade>`.
-- [ ] CLI flags: `ade --version`, `ade --help`.
-- [ ] Interactive REPL: `ade repl` with state persistence, multiline handling, `.help`, `.clear`, and `.exit`.
-- [ ] End-to-end integration tests.
+- [x] CLI runner: `ade run <file.ade>` and `python -m ade run <file.ade>`.
+- [x] CLI flags: `ade --version`, `ade --help`.
+- [x] Interactive REPL: `ade repl` with state persistence, multiline handling, `.help`, `.clear`, and `.exit`.
+- [x] End-to-end integration tests.
 
 ---
 
 ## Phase 5: High-Quality Diagnostics (Milestone 0.1)
-- [ ] Source line snippet extraction with line gutters.
-- [ ] Underline carets (`^`) pointing to exact error spans.
-- [ ] Clear diagnostic messages: What happened, Where it occurred, Why it is invalid, and Suggestions for resolution.
+- [x] Source line snippet extraction with line gutters.
+- [x] Underline carets (`^`) pointing to exact error spans.
+- [x] Clear diagnostic messages: What happened, Where it occurred, Why it is invalid, and Suggestions for resolution.
 
 ---
 
 ## Phase 6: Modules & Package Management
-- [ ] Project-local module resolution (`import utils`, `from math import sqrt`).
-- [ ] Independent module cache and isolated module namespaces.
+- [x] Project-local module resolution (`import utils`, `from math import sqrt`).
+- [x] Independent module cache and isolated module namespaces.
 - [ ] Initial project manifest support (`ade.toml`).
 
 ---
 
 ## Phase 7: Gradual & Static Type System
-- [ ] Optional type annotations on variables (`name: text = "Fortune"`).
-- [ ] Function parameter and return type signatures (`function add(a: number, b: number) -> number`).
-- [ ] Local type inference for basic declarations.
-- [ ] Static type checker command: `ade check`.
+- [x] Optional type annotations on variables (`name: text = "Fortune"`).
+- [x] Function parameter and return type signatures (`function add(a: number, b: number) -> number`).
+- [x] Local type inference for basic declarations.
+- [x] Static type checker command: `ade check`.
 
 ---
 

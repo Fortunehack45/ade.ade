@@ -35,6 +35,11 @@ from ade.ast.nodes import (
     ImportStmt,
     FromImportStmt,
     ClassDeclStmt,
+    TypeAnnotation,
+    NamedTypeAnnotation,
+    NullableTypeAnnotation,
+    GenericTypeAnnotation,
+    UnionTypeAnnotation,
 )
 from ade.ast.visitor import ASTVisitor
 
@@ -57,6 +62,11 @@ __all__ = [
     "ImportStmt",
     "FromImportStmt",
     "ClassDeclStmt",
+    "TypeAnnotation",
+    "NamedTypeAnnotation",
+    "NullableTypeAnnotation",
+    "GenericTypeAnnotation",
+    "UnionTypeAnnotation",
     "NumberLiteral",
     "StringLiteral",
     "BoolLiteral",

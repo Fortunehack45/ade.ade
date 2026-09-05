@@ -1,7 +1,7 @@
 """Abstract Syntax Tree (AST) node definitions for Ade."""
 
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 from ade.diagnostics.span import SourceSpan
 from ade.lexer.token import Token
 
@@ -10,6 +10,41 @@ from ade.lexer.token import Token
 class ASTNode:
     """Base class for all AST nodes."""
     span: SourceSpan
+
+
+# ============================================================================
+# Type Annotations
+# ============================================================================
+
+@dataclass
+class TypeAnnotation(ASTNode):
+    """Base class for type annotations."""
+    pass
+
+
+@dataclass
+class NamedTypeAnnotation(TypeAnnotation):
+    """Named type: number, text, bool, null, any, void, or custom class name."""
+    name: str
+
+
+@dataclass
+class NullableTypeAnnotation(TypeAnnotation):
+    """Nullable type: inner? (e.g. text?, number?)."""
+    inner: TypeAnnotation
+
+
+@dataclass
+class GenericTypeAnnotation(TypeAnnotation):
+    """Generic type: name<arg1, arg2, ...> (e.g. list<number>, map<text, number>)."""
+    name: str
+    type_arguments: List[TypeAnnotation]
+
+
+@dataclass
+class UnionTypeAnnotation(TypeAnnotation):
+    """Union type: T1 | T2 | ... (e.g. number | text)."""
+    types: List[TypeAnnotation]
 
 
 # ============================================================================
@@ -116,9 +151,11 @@ class MapLiteral(Expression):
 
 @dataclass
 class AnonymousFunctionExpr(Expression):
-    """Anonymous function: function(params) { body }."""
+    """Anonymous function: function(params) -> return_type { body }."""
     params: List[str]
     body: "BlockStmt"
+    param_types: Optional[Dict[str, Optional[TypeAnnotation]]] = None
+    return_type: Optional[TypeAnnotation] = None
 
 
 @dataclass
@@ -157,9 +194,10 @@ class ExpressionStmt(Statement):
 
 @dataclass
 class VarAssignmentStmt(Statement):
-    """Variable assignment: target = expression."""
+    """Variable assignment: target = expression, with optional type annotation."""
     target: Expression  # Identifier, MemberAccessExpr, or IndexAccessExpr
     value: Expression
+    type_annotation: Optional[TypeAnnotation] = None
 
 
 @dataclass
@@ -193,10 +231,12 @@ class ForStmt(Statement):
 
 @dataclass
 class FunctionDeclStmt(Statement):
-    """Named function declaration: function name(params) { body }."""
+    """Named function declaration: function name(params) -> return_type { body }."""
     name: str
     params: List[str]
     body: BlockStmt
+    param_types: Optional[Dict[str, Optional[TypeAnnotation]]] = None
+    return_type: Optional[TypeAnnotation] = None
 
 
 @dataclass

@@ -1,6 +1,6 @@
 """Parser for the Ade programming language."""
 
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 from ade.diagnostics.span import SourceSpan
 from ade.lexer.token import Token, TokenType
 from ade.ast.nodes import (
@@ -37,6 +37,11 @@ from ade.ast.nodes import (
     ImportStmt,
     FromImportStmt,
     ClassDeclStmt,
+    TypeAnnotation,
+    NamedTypeAnnotation,
+    NullableTypeAnnotation,
+    GenericTypeAnnotation,
+    UnionTypeAnnotation,
 )
 from ade.parser.errors import ParseError
 
@@ -74,6 +79,11 @@ class Parser:
 
     def _peek(self) -> Token:
         return self.tokens[self.current]
+
+    def _peek_next(self) -> Token:
+        if self.current + 1 >= len(self.tokens):
+            return self.tokens[-1]
+        return self.tokens[self.current + 1]
 
     def _previous(self) -> Token:
         return self.tokens[self.current - 1]
@@ -123,6 +133,9 @@ class Parser:
     # ========================================================================
 
     def _parse_declaration_or_statement(self) -> Statement:
+        if self._check(TokenType.IDENTIFIER) and self._peek_next().type == TokenType.COLON:
+            return self._parse_typed_variable_declaration()
+
         if self._match(TokenType.FUNCTION):
             # Check if this is a named function declaration
             if self._check(TokenType.IDENTIFIER):
@@ -244,7 +257,10 @@ class Parser:
             if self._match(TokenType.FUNCTION):
                 methods.append(self._parse_function_declaration())
             elif self._match(TokenType.IDENTIFIER):
-                fields.append(self._previous().lexeme)
+                f_name = self._previous().lexeme
+                fields.append(f_name)
+                if self._match(TokenType.COLON):
+                    _ = self._parse_type_annotation()
             else:
                 curr = self._peek()
                 raise ParseError(
@@ -282,6 +298,7 @@ class Parser:
         )
 
         params: List[str] = []
+        param_types: Dict[str, Optional[TypeAnnotation]] = {}
         self._skip_newlines()
         if not self._check(TokenType.RPAREN):
             while True:
@@ -291,7 +308,12 @@ class Parser:
                     message="expected parameter name",
                     hint="Function parameters must be valid identifier names."
                 )
-                params.append(param_token.lexeme)
+                p_name = param_token.lexeme
+                params.append(p_name)
+                t_ann = None
+                if self._match(TokenType.COLON):
+                    t_ann = self._parse_type_annotation()
+                param_types[p_name] = t_ann
                 self._skip_newlines()
                 if not self._match(TokenType.COMMA):
                     break
@@ -303,10 +325,22 @@ class Parser:
             hint="Close the function parameter list with ')' before opening the body block."
         )
 
+        return_type = None
+        self._skip_newlines()
+        if self._match(TokenType.ARROW):
+            return_type = self._parse_type_annotation()
+
         self._skip_newlines()
         body = self._parse_block()
         span = SourceSpan.merge(func_token.span, body.span)
-        return FunctionDeclStmt(span=span, name=name_token.lexeme, params=params, body=body)
+        return FunctionDeclStmt(
+            span=span,
+            name=name_token.lexeme,
+            params=params,
+            body=body,
+            param_types=param_types,
+            return_type=return_type,
+        )
 
     def _parse_say_statement(self) -> SayStmt:
         say_token = self._previous()
@@ -410,6 +444,88 @@ class Parser:
             return VarAssignmentStmt(span=span, target=expr, value=value)
 
         return ExpressionStmt(span=expr.span, expression=expr)
+
+    def _parse_typed_variable_declaration(self) -> VarAssignmentStmt:
+        ident_token = self._advance()
+        ident_expr = Identifier(span=ident_token.span, name=ident_token.lexeme)
+        self._expect(TokenType.COLON, message="expected ':' in typed variable declaration")
+        type_ann = self._parse_type_annotation()
+
+        if self._match(TokenType.EQUAL):
+            value_expr = self._parse_expression()
+            span = SourceSpan.merge(ident_token.span, value_expr.span)
+        else:
+            value_expr = NullLiteral(span=ident_token.span)
+            span = SourceSpan.merge(ident_token.span, type_ann.span)
+
+        return VarAssignmentStmt(
+            span=span,
+            target=ident_expr,
+            value=value_expr,
+            type_annotation=type_ann,
+        )
+
+    def _parse_type_annotation(self) -> TypeAnnotation:
+        self._skip_newlines()
+        first_token: Token
+        if self._check(TokenType.IDENTIFIER) or self._check(TokenType.NULL):
+            first_token = self._advance()
+        else:
+            curr = self._peek()
+            raise ParseError(
+                message="expected type name in type annotation",
+                span=curr.span,
+                source_code=self.source_code,
+                hint="Use primitive types (number, text, bool, null, any, void) or class names."
+            )
+        base_span = first_token.span
+        type_name = first_token.lexeme
+
+        # Check for generic arguments: list<number>, map<text, number>
+        if self._match(TokenType.LESS):
+            type_args: List[TypeAnnotation] = []
+            while True:
+                self._skip_newlines()
+                type_args.append(self._parse_type_annotation())
+                self._skip_newlines()
+                if not self._match(TokenType.COMMA):
+                    break
+            greater_token = self._expect(
+                TokenType.GREATER,
+                message="expected '>' after generic type arguments",
+                hint="Close generic type parameters with '>'."
+            )
+            base_span = SourceSpan.merge(base_span, greater_token.span)
+            ann: TypeAnnotation = GenericTypeAnnotation(
+                span=base_span,
+                name=type_name,
+                type_arguments=type_args,
+            )
+        else:
+            ann = NamedTypeAnnotation(span=base_span, name=type_name)
+
+        # Check for nullable suffix: ?
+        if self._match(TokenType.QUESTION):
+            q_token = self._previous()
+            ann = NullableTypeAnnotation(
+                span=SourceSpan.merge(ann.span, q_token.span),
+                inner=ann,
+            )
+
+        # Check for union types: |
+        if self._match(TokenType.PIPE):
+            types = [ann]
+            while True:
+                self._skip_newlines()
+                next_ann = self._parse_type_annotation()
+                types.append(next_ann)
+                self._skip_newlines()
+                if not self._match(TokenType.PIPE):
+                    break
+            union_span = SourceSpan.merge(ann.span, types[-1].span)
+            ann = UnionTypeAnnotation(span=union_span, types=types)
+
+        return ann
 
     # ========================================================================
     # Expression Parsing (Pratt Precedence Climbing)
@@ -724,6 +840,7 @@ class Parser:
         )
 
         params: List[str] = []
+        param_types: Dict[str, Optional[TypeAnnotation]] = {}
         self._skip_newlines()
         if not self._check(TokenType.RPAREN):
             while True:
@@ -733,7 +850,12 @@ class Parser:
                     message="expected parameter name",
                     hint="Function parameters must be identifiers."
                 )
-                params.append(param_token.lexeme)
+                p_name = param_token.lexeme
+                params.append(p_name)
+                t_ann = None
+                if self._match(TokenType.COLON):
+                    t_ann = self._parse_type_annotation()
+                param_types[p_name] = t_ann
                 self._skip_newlines()
                 if not self._match(TokenType.COMMA):
                     break
@@ -745,10 +867,21 @@ class Parser:
             hint="Close the function parameter list with ')'."
         )
 
+        return_type = None
+        self._skip_newlines()
+        if self._match(TokenType.ARROW):
+            return_type = self._parse_type_annotation()
+
         self._skip_newlines()
         body = self._parse_block()
         span = SourceSpan.merge(func_token.span, body.span)
-        return AnonymousFunctionExpr(span=span, params=params, body=body)
+        return AnonymousFunctionExpr(
+            span=span,
+            params=params,
+            body=body,
+            param_types=param_types,
+            return_type=return_type,
+        )
 
     def _parse_interpolated_string(
         self, text: str, span: SourceSpan
