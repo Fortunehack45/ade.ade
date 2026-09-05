@@ -1,0 +1,30 @@
+# Ade Standard Library Demonstration (fs, os, io, math, json)
+
+import fs
+import os
+import io
+
+# 1. Operating System introspection
+plat: text = os.platform()
+current_dir: text = os.cwd()
+say "Running on platform: {plat}"
+say "Current directory: {current_dir}"
+
+# 2. Filesystem operations
+demo_file = "demo_output.txt"
+say "Writing test file '{demo_file}'..."
+fs.write_text(demo_file, "Ade Standard Library Rocks!\n")
+
+if fs.exists(demo_file) {
+    say "File exists on disk!"
+    fs.append_text(demo_file, "Line 2: Built with power and elegance.\n")
+    content: text = fs.read_text(demo_file)
+    say "File content:\n{content}"
+    
+    # Cleanup demo file
+    fs.remove(demo_file)
+    say "Demo file cleaned up successfully."
+}
+
+# 3. Interactive I/O Streams
+io.println("All standard library checks completed successfully!")

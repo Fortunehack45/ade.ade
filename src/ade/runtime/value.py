@@ -284,13 +284,22 @@ class AdeBuiltinFunction(AdeCallable):
         name: str,
         param_count: int,
         fn: Callable[[Any, List[AdeValue], SourceSpan], AdeValue],
+        min_args: Optional[int] = None,
+        max_args: Optional[int] = None,
     ):
         self.name = name
         self.param_count = param_count
         self.fn = fn
+        self.min_args = min_args if min_args is not None else param_count
+        self.max_args = max_args if max_args is not None else param_count
 
     def arity(self) -> int:
         return self.param_count
+
+    def is_valid_arg_count(self, count: int) -> bool:
+        if self.param_count == -1:
+            return True
+        return self.min_args <= count <= self.max_args
 
     def to_string(self) -> str:
         return f"<builtin function {self.name}>"

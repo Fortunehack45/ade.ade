@@ -614,7 +614,14 @@ class Interpreter:
             return callee.call(self, ordered_args, expr.span)
 
         args = pos_args
-        if callee.arity() != len(args):
+        if isinstance(callee, AdeBuiltinFunction):
+            if not callee.is_valid_arg_count(len(args)):
+                raise AdeRuntimeError(
+                    f"Function '{callee.name}' expects between {callee.min_args} and {callee.max_args} argument(s), but got {len(args)}.",
+                    span=expr.span,
+                    source_code=self.source_code,
+                )
+        elif callee.arity() != -1 and callee.arity() != len(args):
             raise AdeRuntimeError(
                 f"Expected {callee.arity()} argument(s), but got {len(args)}.",
                 span=expr.span,

@@ -72,13 +72,13 @@ This document outlines the progressive phases of developing the Ade programming 
 ---
 
 ## Phase 8: Standard Library
-- [ ] Core standard libraries:
-  - `ade.io`: Standard I/O streams and formatting.
-  - `ade.fs`: Filesystem read, write, directory traversal.
-  - `ade.os`: Environment variables, platform detection.
-  - `ade.math`: Mathematical constants and functions.
-  - `ade.json`: Parsing and serializing JSON.
-  - `ade.time`: Timestamps, duration, formatting.
+- [x] Core standard libraries:
+  - [x] `ade.io`: Standard I/O streams (`read_line`, `print`, `println`, `eprintln`).
+  - [x] `ade.fs`: Filesystem read, write, append, existence, directory traversal, deletion.
+  - [x] `ade.os`: Environment variables, platform detection, cwd, exit.
+  - [x] `ade.math`: Mathematical constants and functions.
+  - [x] `ade.json`: Parsing and serializing JSON.
+  - [x] `ade.time`: Timestamps, duration, sleep.
 
 ---
 

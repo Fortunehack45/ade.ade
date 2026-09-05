@@ -155,6 +155,55 @@ class TypeChecker:
             Symbol(name="json", type=json_class, span=dummy_span, is_class=True)
         )
 
+        fs_class = ClassType(
+            name="fs",
+            methods={
+                "read_text": FunctionType(param_types=[("path", TYPE_TEXT)], return_type=TYPE_TEXT),
+                "write_text": FunctionType(param_types=[("path", TYPE_TEXT), ("content", TYPE_TEXT)], return_type=TYPE_VOID),
+                "append_text": FunctionType(param_types=[("path", TYPE_TEXT), ("content", TYPE_TEXT)], return_type=TYPE_VOID),
+                "exists": FunctionType(param_types=[("path", TYPE_TEXT)], return_type=TYPE_BOOL),
+                "is_file": FunctionType(param_types=[("path", TYPE_TEXT)], return_type=TYPE_BOOL),
+                "is_dir": FunctionType(param_types=[("path", TYPE_TEXT)], return_type=TYPE_BOOL),
+                "list_dir": FunctionType(param_types=[("path", TYPE_TEXT)], return_type=ListType(TYPE_TEXT)),
+                "remove": FunctionType(param_types=[("path", TYPE_TEXT)], return_type=TYPE_BOOL),
+                "mkdir": FunctionType(param_types=[("path", TYPE_TEXT)], return_type=TYPE_BOOL),
+            }
+        )
+        self.global_scope.define(
+            "fs",
+            Symbol(name="fs", type=fs_class, span=dummy_span, is_class=True)
+        )
+
+        os_class = ClassType(
+            name="os",
+            methods={
+                "get_env": FunctionType(param_types=[("name", TYPE_TEXT), ("default", TYPE_TEXT)], return_type=TYPE_TEXT),
+                "set_env": FunctionType(param_types=[("name", TYPE_TEXT), ("value", TYPE_TEXT)], return_type=TYPE_VOID),
+                "platform": FunctionType(param_types=[], return_type=TYPE_TEXT),
+                "cwd": FunctionType(param_types=[], return_type=TYPE_TEXT),
+                "exit": FunctionType(param_types=[("code", TYPE_NUMBER)], return_type=TYPE_VOID),
+                "args": FunctionType(param_types=[], return_type=ListType(TYPE_TEXT)),
+            }
+        )
+        self.global_scope.define(
+            "os",
+            Symbol(name="os", type=os_class, span=dummy_span, is_class=True)
+        )
+
+        io_class = ClassType(
+            name="io",
+            methods={
+                "read_line": FunctionType(param_types=[("prompt", TYPE_TEXT)], return_type=TYPE_TEXT),
+                "print": FunctionType(param_types=[("value", TYPE_ANY)], return_type=TYPE_VOID),
+                "println": FunctionType(param_types=[("value", TYPE_ANY)], return_type=TYPE_VOID),
+                "eprintln": FunctionType(param_types=[("value", TYPE_ANY)], return_type=TYPE_VOID),
+            }
+        )
+        self.global_scope.define(
+            "io",
+            Symbol(name="io", type=io_class, span=dummy_span, is_class=True)
+        )
+
     def check(self, program: Program) -> List[Diagnostic]:
         """Perform type checking across the entire program AST and return all diagnostics."""
         self.visit(program)

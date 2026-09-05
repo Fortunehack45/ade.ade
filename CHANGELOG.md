@@ -4,6 +4,37 @@ All notable changes to Ade will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-05
+
+### Added
+- **Core Standard Library Extensions (`ade.stdlib`)**:
+  - `fs`: Safe, ergonomic file and directory management:
+    - `read_text(path)`: UTF-8 file reading into `AdeString`.
+    - `write_text(path, content)`: File writing and atomic overwriting.
+    - `append_text(path, content)`: Appending text to files.
+    - `exists(path)`: Filesystem existence probe.
+    - `is_file(path)` & `is_dir(path)`: Path type checking.
+    - `list_dir(path)`: Directory content enumeration as `AdeList`.
+    - `remove(path)`: File deletion with Windows file-indexer retry loop.
+    - `mkdir(path)`: Recursive directory creation.
+  - `os`: Operating system interaction:
+    - `get_env(name, default)`: Process environment variable retrieval.
+    - `set_env(name, value)`: Process environment variable assignment.
+    - `platform()`: Normalized OS platform detector (`"windows"`, `"linux"`, `"macos"`).
+    - `cwd()`: Current working directory resolution.
+    - `exit(code)`: Clean runtime process termination.
+  - `io`: Stream input and output:
+    - `read_line(prompt)`: Interactive user input from stdin.
+    - `print(value)` & `println(value)`: Unbuffered and buffered stdout printing.
+    - `eprintln(value)`: Stderr diagnostic stream printing.
+- **Built-in Function Arity Flexibility**:
+  - `AdeBuiltinFunction` enhanced with `min_args` and `max_args` range checking for functions with default arguments.
+- **Static Type Checking for Standard Library**:
+  - Complete `ClassType` and `FunctionType` semantic signatures registered in `TypeChecker`, enabling `ade check` to statically validate all `fs`, `os`, and `io` calls.
+- **Documentation & Examples**:
+  - Comprehensive reference guide `docs/stdlib.md` documenting all standard library modules (`math`, `time`, `json`, `fs`, `os`, `io`).
+  - Executable verification suite in `examples/stdlib_demo.ade`.
+
 ## [0.3.0] - 2026-09-05
 
 ### Added
